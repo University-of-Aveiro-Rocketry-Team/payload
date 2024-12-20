@@ -1,115 +1,105 @@
 #include <motor.h>
 #include <driver/gpio.h>
 
-#define ENCA 2      // Encoder A (input)
-#define ENCB 4      // Encoder B (input)
-#define PWM 5       // Motor driver PWM (ESP32 GPIO) (output)
-#define IN1 15      // Motor driver IN1 (output)
-#define IN2 27      // Motor driver IN2 (output)
-
 volatile int posi = 0;  // Encoder position
 long prevT = 0;
 float eprev = 0;
 float eintegral = 0;
 
-void setup() {
-  // TODO: change tx and rx pins!!
-  motor_uart_config(9600, GPIO_NUM_15, GPIO_NUM_27);
-
-  gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT); //??
-  gpio_set_direction(GPIO_NUM_4, GPIO_MODE_INPUT);
+void motor_setup() {
+  gpio_set_direction(ENCA, GPIO_MODE_INPUT);
+  gpio_set_direction(ENCB, GPIO_MODE_INPUT);
 
   attachInterrupt();
 
-  gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
-  gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
+  gpio_set_direction(PWM, GPIO_MODE_OUTPUT);
+  gpio_set_direction(IN1, GPIO_MODE_OUTPUT);
+  gpio_set_direction(IN2, GPIO_MODE_OUTPUT);
 
-  // pinMode(ENCA, INPUT);
-  // pinMode(ENCB, INPUT);
-  // attachInterrupt(digitalPinToInterrupt(ENCA), readEncoder, RISING);
-
-  // pinMode(IN1, OUTPUT);
-  // pinMode(IN2, OUTPUT);
-  
   // Setup PWM channel
-  ledcAttachPin(PWM, 0);  // Attach PWM to GPIO 5 (channel 0)
-  ledcSetup(0, 1000, 8);  // Channel 0, 1kHz, 8-bit resolution
-
-  Serial.println("target pos");
-}
-
-void motor_uart_config(int baud_rate, int tx_pin, int rx_pin) {
-  // Configure UART parameters
-  uart_config_t uart_config = {
-      .baud_rate = baud_rate,                  // Set baud rate
-      .data_bits = UART_DATA_8_BITS,      // 8 data bits
-      .parity = UART_PARITY_DISABLE,      // No parity
-      .stop_bits = UART_STOP_BITS_1,      // 1 stop bit
-      .flow_ctrl = UART_HW_FLOWCTRL_DISABLE, // No flow control
-  };
-  uart_driver_install(UART_NUM_0, BUF_SIZE, BUF_SIZE, 0, NULL, 0);
-  uart_param_config(UART_NUM_0, &uart_config);
-  uart_set_pin(UART_NUM_0, tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+  setup_motor_pwm(PWM, MOTOR_FREQ, MOTOR_RESOLUTION, MOTOR_CHANNEL);
 }
 
 void attachInterrupt() {
   // set rising edge
-  gpio_set_intr_type(GPIO_NUM_2, GPIO_INTR_POSEDGE);
+  gpio_set_intr_type(ENCA, GPIO_INTR_POSEDGE);
 
   // Initialize the ISR service
-  gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
+  gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
 
   // Add the ISR handler
-  gpio_isr_handler_add(GPIO_NUM_2, readEncoder, NULL);
+  gpio_isr_handler_add(ENCA, readEncoder, NULL);
 }
+
+void setup_motor_pwm(int PWM_PIN, int PWM_FREQ, ledc_timer_bit_t PWM_RES, ledc_channel_t PWM_CHANNEL) {
+  ledc_timer_config_t timer_conf = {
+      .duty_resolution = PWM_RES,
+      .freq_hz = PWM_FREQ,
+      .speed_mode = LEDC_HIGH_SPEED_MODE,
+      .timer_num = LEDC_TIMER_0,
+  };
+  ledc_timer_config(&timer_conf);
+
+  ledc_channel_config_t ledc_conf = {
+      .channel = PWM_CHANNEL,
+      .duty = 0,
+      .gpio_num = PWM_PIN,
+      .speed_mode = LEDC_HIGH_SPEED_MODE,
+      .timer_sel = LEDC_TIMER_0,
+  };
+  ledc_channel_config(&ledc_conf);
+}
+
+void ledc_write(float duty_cycle) {
+  uint32_t duty = (uint32_t)((1 << MOTOR_RESOLUTION) * duty_cycle); // 1<<resolution = 2^resolution
+  ledc_set_duty(LEDC_HIGH_SPEED_MODE, MOTOR_CHANNEL, duty);
+  ledc_update_duty(LEDC_HIGH_SPEED_MODE, MOTOR_CHANNEL);
+}
+
 
 void loop_motor() {
-  int target = 250 * sin(prevT / 1e6);
+  // int target = 250 * sin(prevT / 1e6);
 
-  // PID constants
-  float kp = 1;
-  float kd = 0.025;
-  float ki = 0.0;
+  // // PID constants
+  // float kp = 1;
+  // float kd = 0.025;
+  // float ki = 0.0;
 
-  long currT = micros();
-  float deltaT = ((float)(currT - prevT)) / 1.0e6;
-  prevT = currT;
+  // long currT = micros();
+  // float deltaT = ((float)(currT - prevT)) / 1.0e6;
+  // prevT = currT;
 
-  int pos = posi;
+  // int pos = posi;
 
-  int e = pos - target;
-  float dedt = (e - eprev) / deltaT;
-  eintegral += e * deltaT;
+  // int e = pos - target;
+  // float dedt = (e - eprev) / deltaT;
+  // eintegral += e * deltaT;
 
-  float u = kp * e + kd * dedt + ki * eintegral;
-  float pwr = fabs(u);
-  if (pwr > 255) pwr = 255;
+  // float u = kp * e + kd * dedt + ki * eintegral;
+  // float pwr = fabs(u);
+  // if (pwr > 255) pwr = 255;
 
-  int dir = (u < 0) ? -1 : 1;
+  // int dir = (u < 0) ? -1 : 1;
 
-  setMotor(dir, pwr, PWM, IN1, IN2);
+  // setMotor(dir, pwr, IN1, IN2);
+  setMotor(1, 255, IN1, IN2);
 
-  eprev = e;
-
-  Serial.print(target);
-  Serial.print(" ");
-  Serial.print(pos);
-  Serial.println();
+  // eprev = e;
 }
 
-void setMotor(int dir, int pwmVal, int pwm, int in1, int in2) {
-  ledcWrite(0, pwmVal);
+void setMotor(int dir, int pwmVal, int in1, int in2) {
+  ledc_write(pwmVal);
   if (dir == 1) {
-    digitalWrite(in1, HIGH);
-    digitalWrite(in2, LOW);
+    gpio_set_level(in1, 1);
+    gpio_set_level(in2, 0);
   } else {
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
+    gpio_set_level(in1, 0);
+    gpio_set_level(in2, 1);
   }
 }
 
 void readEncoder() {
-  int b = digitalRead(ENCB);
+  int b = gpio_get_level(ENCB);
   posi += (b > 0) ? 1 : -1;
 }
 

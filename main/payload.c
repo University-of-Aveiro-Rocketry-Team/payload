@@ -59,7 +59,8 @@ void neo7m_loop();
 // LoRa
 esp_err_t lora_setup();
 void send_lora_loop();
-
+// motor
+void motor_loop();
 
 /***** PROGRAM STARTS HERE *****/
 // Initiliazer I2C communication with MPU-6500
@@ -219,6 +220,16 @@ void send_lora_loop(void *pvParameters)
     }
 }
 
+// Motor loop
+void motor_loop(void *pvParameters)
+{
+    motor_setup();
+    while(1) {
+        loop_motor();
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+}
+
 void app_main()
 {
     data_to_send = malloc(sizeof(data_t));
@@ -269,6 +280,7 @@ void app_main()
     xTaskCreate(mpu6500_loop, "mpu6500_loop", 4096, NULL, 5, NULL);
     xTaskCreate(neo7m_loop, "neo7m_loop", 4096, NULL, 5, NULL);
     xTaskCreate(send_lora_loop, "send_lora_loop", 4096, NULL, 5, NULL);
+    xTaskCreate(motor_loop, "motor_loop", 4096, NULL, 5, NULL);
 
     // Infinite loop delay
     while (1)
@@ -288,62 +300,3 @@ void app_main()
         return;
     }
 }
-
-// //test
-// volatile int posi = 0;
-// long prevT = 0;
-// float eprev = 0;
-// float eintegral = 0;
-
-// void setup() {
-//     Serial.begin(9600);
-
-//     // Configura o motor
-//     setupMotor();
-
-//     // Configura os pinos do encoder
-//     pinMode(2, INPUT);  // ENCA
-//     pinMode(4, INPUT);  // ENCB
-//     attachInterrupt(digitalPinToInterrupt(2), readEncoder, RISING);
-
-//     Serial.println("target pos");
-// }
-
-// void motor_loop() {
-//     int target = 250 * sin(prevT / 1e6);
-//     float kp = 1, kd = 0.025, ki = 0.0;
-
-//     long currT = micros();
-//     float deltaT = ((float)(currT - prevT)) / 1.0e6;
-//     prevT = currT;
-
-//     int pos;
-//     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-//         pos = posi;
-//     }
-
-//     int e = pos - target;
-//     float dedt = (e - eprev) / deltaT;
-//     eintegral += e * deltaT;
-
-//     float u = kp * e + kd * dedt + ki * eintegral;
-//     float pwr = fabs(u);
-//     if (pwr > 255) pwr = 255;
-
-//     int dir = (u < 0) ? -1 : 1;
-
-//     // Controle do motor
-//     setMotor(dir, pwr);
-
-//     eprev = e;
-
-//     Serial.print(target);
-//     Serial.print(" ");
-//     Serial.print(pos);
-//     Serial.println();
-// }
-
-// void readEncoder() {
-//     int b = digitalRead(4);  
-//     posi += (b > 0) ? 1 : -1;
-// }
