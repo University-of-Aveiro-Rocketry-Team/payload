@@ -1,6 +1,5 @@
 #include "lora.h"
 
-
 void lora_uart_initialize(int baud_rate, int tx_pin, int rx_pin, int rts_pin, int cts_pin)
 {
     uart_config_t uart_config = {

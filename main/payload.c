@@ -14,6 +14,10 @@
 #include "spiffs.h"
 #include "neo-7m.h"
 
+//test
+#include "motor.h"
+// #include <Arduino.h>
+//
 
 /***** DEFENITIONS *****/
 // MPU-6500
@@ -30,6 +34,7 @@
 #define SPIFFS_NEO_PATH "/spiffs/neo.txt"
 #define LORA_ON 1
 #define SPIFFS_ON 0
+
 
 
 /***** VARIABLES *****/
@@ -283,3 +288,62 @@ void app_main()
         return;
     }
 }
+
+// //test
+// volatile int posi = 0;
+// long prevT = 0;
+// float eprev = 0;
+// float eintegral = 0;
+
+// void setup() {
+//     Serial.begin(9600);
+
+//     // Configura o motor
+//     setupMotor();
+
+//     // Configura os pinos do encoder
+//     pinMode(2, INPUT);  // ENCA
+//     pinMode(4, INPUT);  // ENCB
+//     attachInterrupt(digitalPinToInterrupt(2), readEncoder, RISING);
+
+//     Serial.println("target pos");
+// }
+
+// void motor_loop() {
+//     int target = 250 * sin(prevT / 1e6);
+//     float kp = 1, kd = 0.025, ki = 0.0;
+
+//     long currT = micros();
+//     float deltaT = ((float)(currT - prevT)) / 1.0e6;
+//     prevT = currT;
+
+//     int pos;
+//     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+//         pos = posi;
+//     }
+
+//     int e = pos - target;
+//     float dedt = (e - eprev) / deltaT;
+//     eintegral += e * deltaT;
+
+//     float u = kp * e + kd * dedt + ki * eintegral;
+//     float pwr = fabs(u);
+//     if (pwr > 255) pwr = 255;
+
+//     int dir = (u < 0) ? -1 : 1;
+
+//     // Controle do motor
+//     setMotor(dir, pwr);
+
+//     eprev = e;
+
+//     Serial.print(target);
+//     Serial.print(" ");
+//     Serial.print(pos);
+//     Serial.println();
+// }
+
+// void readEncoder() {
+//     int b = digitalRead(4);  
+//     posi += (b > 0) ? 1 : -1;
+// }

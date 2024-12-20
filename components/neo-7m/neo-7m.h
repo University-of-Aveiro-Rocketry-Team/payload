@@ -29,7 +29,7 @@ typedef struct
  * @param cts_pin CTS pin
  */
 void neo7m_uart_initialize(int baud_rate, int tx_pin, int rx_pin, int rts_pin, int cts_pin);
-
+ 
 /**
  * @brief Read the data from the GPS
  * 

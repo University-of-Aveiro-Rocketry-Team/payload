@@ -8,6 +8,7 @@ set(EXTRA_COMPONENT_DIRS ./components/mpu-6500)
 set(EXTRA_COMPONENT_DIRS ./components/minmea)
 set(EXTRA_COMPONENT_DIRS ./components/neo-7m)
 set(EXTRA_COMPONENT_DIRS ./components/lora)
+set(EXTRA_COMPONENT_DIRS ./components/motor)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(payload)
